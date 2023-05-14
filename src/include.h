@@ -1,6 +1,5 @@
+#include "Arduino.h"
 #include "mysetup.h"
-
-#include <IO-Kit.h>
 #include "math.h"
 
 #include <Wire.h>
@@ -21,6 +20,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
+#include "IO-Kit.h"
 
 #include "FastLED.h"                  //NeoPixel
 #define NUM_LEDS 16

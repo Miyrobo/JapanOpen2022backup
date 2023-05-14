@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "include.h"
 
 void checkping();
@@ -144,10 +145,10 @@ void doremi() {
   }
 }
 
-void start_sound() {
+void start_sound() { //起動音
   mot.stop();
   if (seme.color == 2) {
-    tone(buzzer, 3135, 150); //さくさく
+    tone(buzzer, 3135, 150);
     delay(120);
     tone(buzzer, 987, 50);
     delay(80);
@@ -156,7 +157,7 @@ void start_sound() {
     tone(buzzer, 1046, 50);
     delay(100);
   } else {
-    tone(buzzer, 2637, 150); //今の
+    tone(buzzer, 2637, 150);
     delay(120);
     tone(buzzer, 987, 50);
     delay(80);
@@ -1010,6 +1011,320 @@ void kickertest() {
   delay(50);
 
 }
+
+//----------------------------------------------------------------------------------------
+//メインプログラム
+void loop() {  
+  if (get_timer(24) > 1000) {
+    display.clearDisplay();
+    display.setCursor(30, 20);
+    display.setTextSize(4);
+    display.print(FPS);
+    display.display();
+    FPS = 0;
+    clr_timer(24);
+  }
+  FPS++;
+
+  if (digitalRead(Pin_BUSY) == 1) {
+    //myDFPlayer.play(5);
+  }
+
+  int balljibun;
+  if (ball.n <= 2) {
+    comout(2, 1);
+    comout(3, 0);
+    balljibun = 1;
+    if (ball.dir == 1000)balljibun = 0;
+  } else if (ball.n <= 4) {
+    comout(2, 0);
+    comout(3, 1);
+    balljibun = 2;
+  } else {
+    comout(2, 1);
+    comout(3, 1);
+    balljibun = 3;
+  }
+
+  Speed = MAXspeed;
+  if (!TS) {
+    standby();
+  }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB(0, 0, 0);
+  }
+  if (conect == 1) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(255, 255, 255);
+    }
+  }
+
+  get_sensors();
+  ball.dir = get_ball();
+  neo_dir(ball.dir, 255, 0, 0);
+
+  dir_move = mawarikomi();
+
+  if (ball.dir == 1000 && mamori.w < 120) {
+    //dir_move = mamori.dir;
+  }
+
+  //------------------------------------------
+  //キーパー
+  /*
+    if(!SW1){
+    ifkeeper=2;
+    }
+
+    if (ifkeeper == 2) {
+    if (liney < 0)
+      ifkeeper = 1;
+    dir_move = mamori.dir;
+    }else if(ifkeeper==1){
+    if(ball.value[0]<200)ifkeeper=0;
+    if(mamori.dir>150 && mamori.y>-100){
+      dir_move=45;
+    }else if(mamori.dir<-150 && mamori.y>-100){
+      dir_move=-45;
+    }else{
+      if(ball.dir>30 && ball.dir!=1000){
+        if(liney < 0)dir_move=90;
+        else dir_move=120;
+        if(mamori.x<-50)dir_move=1000;
+      }else if(ball.dir<-30){
+        if(liney < 0)dir_move=-90;
+        else dir_move=-120;
+        if(mamori.x>50)dir_move=1000;
+      }else{
+        dir_move=1000;
+      }
+    }
+    }
+  */
+  if (mamorimode) {
+    if (ball.value[0] < 300 && ball.dir < 10 && ball.dir > -10 && conect && !comin(3)) {
+      comout(2, 1);
+      tone(buzzer, 2000, 100);
+    } else
+      comout(2, 0);
+
+    //comout(3, ifkeeper);
+
+    if (comin(2) && !ifkeeper && conect) {
+      ifkeeper = 1;
+      tone(buzzer, 2000, 100);
+    }
+    if (ifkeeper == 1) {
+      if (liney < 0)
+        ifkeeper = 0;
+      dir_move = mamori.dir;
+    }
+  }
+
+  int rr = 0;
+  if (comin(2)) {
+    rr++;
+  } else if (comin(3)) {
+    rr += 2;
+  }
+
+#ifdef SE_ON
+  if (linex == 0 && liney == 0) {
+    clr_timer(47);
+  } else if (abs(linex) <= 2 && abs(liney) <= 2) {
+    if (get_timer(47) > 200) {
+      clr_timer(48);
+    }
+  } else {
+    if (get_timer(48) > 2000) {
+      myDFPlayer.play(11);
+    }
+    clr_timer(48);
+  }
+#endif
+
+  /*if (balljibun > rr && conect && Robotn == 2) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
+    dir_move = mamori.dir;
+    if (!mamori.cansee)dir_move = 180;
+    Speed = 80;
+    }
+
+    if (balljibun >= rr && conect && Robotn == 1) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
+    dir_move = mamori.dir;
+    if (!mamori.cansee)dir_move = 180;
+    Speed = 80;
+    }
+  */
+
+
+  if (kadomode == 2 || kadomode == -2) {
+    dir_move = 0;
+  } else if (kadomode == 1) {
+    if (dir_move > 90)dir_move = 90;
+  } else if (kadomode == -1)
+    if (dir_move < -90)dir_move = -90;
+  //-----------------------------ライン
+  if (check_line()) {
+    cal_line();
+    clr_timer(0);
+  }
+
+  if (!SW2) {
+    while (!SW2);
+    tone(buzzer, 2000, 100);
+    keepermode = !keepermode;
+  }
+
+
+  if (keepermode) {
+    if (linex > 3) {
+      dir_move = -90;
+    } else if (linex < -3) {
+      dir_move = 90;
+    } else {
+      if (liney >= 4) {
+        dir_move = 180;
+      } else if (liney <= 0) {
+        dir_move = 0;
+      } else {
+        if (ball.dir > 20) {
+          dir_move = 90;
+          if (liney < 2) {
+            dir_move = 75;
+          } else if (liney > 2) {
+            dir_move = 105;
+          }
+        } else if (ball.dir < -20) {
+          dir_move = -90;
+          if (liney < 2) {
+            dir_move = -75;
+          } else if (liney > 2) {
+            dir_move = -105;
+          }
+        } else {
+          dir_move = 1000;
+        }
+
+
+      }
+
+      if (linex > 0 && dir_move > 0) {
+        dir_move = 1000;
+      } else if (linex < 0 && dir_move < 0) {
+        dir_move = 1000;
+      }
+    }
+  }
+
+
+
+
+  cal_motorspeed(dir_move, Speed);
+
+
+
+  if (get_timer(32) > 200) {
+    get_pixy();
+    clr_timer(32);
+  }
+
+  if (!IFHOLD) {
+    clr_timer(49);
+  }
+  if (ball.dir < 60 && ball.dir > -60 && seme.dir != 0 && IFHOLD && get_timer(49) > 1)
+  {
+
+
+    double Pc = 1;
+    m_power[0] += seme.dir * Pc;
+    m_power[1] -= seme.dir * Pc;
+    m_power[2] -= seme.dir * Pc;
+    m_power[3] += seme.dir * Pc;
+  } else {
+    dircontrol();
+  }
+
+
+
+  if (get_timer(0) < 100) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(0, 255, 0);
+    }
+    neo_dir(dir_move, 255, 0, 0);
+  }
+
+  if (roll > 10 || roll < -10) {
+    m_power[0] = 0;
+    m_power[1] = 0;
+    m_power[2] = 0;
+    m_power[3] = 0;
+    linex = 0;
+    liney = 0;
+
+    if (digitalRead(Pin_BUSY) == 1) {
+#ifdef SE_ON
+      myDFPlayer.play(10);
+#endif
+    }
+
+    if (get_timer(7) > 200) {
+      clr_timer(7);
+      lite = !lite;
+    }
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(lite * 255, 0, 0);
+    }
+  }
+
+
+
+  pwm_out();
+
+  /*if ((line[0] + line[1] + line[2] + line[3])*0 + line[4] + line[5] + line[6] + line[7] > 0) {
+    tone(buzzer, 2000, 10);
+    } else {
+    noTone(buzzer);
+    }
+  */
+
+
+  if (get_timer(9) > 250) {
+    AA = !AA;
+    digitalWrite(Pin_out1, AA);
+    clr_timer(9);
+  }
+  if (BB != digitalRead(Pin_in1)) {
+    clr_timer(10);
+    BB = !BB;
+  }
+  if (get_timer(10) > 500) {
+    conect = 0;
+  } else {
+    conect = 1;
+  }
+
+
+
+
+  FastLED.show();
+
+
+  kicker();
+
+  if (linex > 0 && linex < 3 || linex < 0 && linex > -3 || liney > 0 && liney < 3 || liney < 0 && liney > -3) {
+    //tone(buzzer, 1800);
+  } else {
+    //noTone(buzzer);
+  }
+
+  if (linex != 0 || liney != 0) {
+    //tone(buzzer,2000);
+  } else {
+    //noTone(buzzer);
+  }
+
+}
+//-------------------------------------------------------------------------------------------------------------
 
 
 
@@ -2508,313 +2823,3 @@ void set_volume() {
 }
 
 
-void loop() {
-  if (get_timer(24) > 1000) {
-    display.clearDisplay();
-    display.setCursor(30, 20);
-    display.setTextSize(4);
-    display.print(FPS);
-    display.display();
-    FPS = 0;
-    clr_timer(24);
-  }
-  FPS++;
-
-  if (digitalRead(Pin_BUSY) == 1) {
-    //myDFPlayer.play(5);
-  }
-
-  int balljibun;
-  if (ball.n <= 2) {
-    comout(2, 1);
-    comout(3, 0);
-    balljibun = 1;
-    if (ball.dir == 1000)balljibun = 0;
-  } else if (ball.n <= 4) {
-    comout(2, 0);
-    comout(3, 1);
-    balljibun = 2;
-  } else {
-    comout(2, 1);
-    comout(3, 1);
-    balljibun = 3;
-  }
-
-  Speed = MAXspeed;
-  if (!TS) {
-    standby();
-  }
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB(0, 0, 0);
-  }
-  if (conect == 1) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(255, 255, 255);
-    }
-  }
-
-  get_sensors();
-  ball.dir = get_ball();
-  neo_dir(ball.dir, 255, 0, 0);
-
-  dir_move = mawarikomi();
-
-  if (ball.dir == 1000 && mamori.w < 120) {
-    //dir_move = mamori.dir;
-  }
-
-  //------------------------------------------
-  //キーパー
-  /*
-    if(!SW1){
-    ifkeeper=2;
-    }
-
-    if (ifkeeper == 2) {
-    if (liney < 0)
-      ifkeeper = 1;
-    dir_move = mamori.dir;
-    }else if(ifkeeper==1){
-    if(ball.value[0]<200)ifkeeper=0;
-    if(mamori.dir>150 && mamori.y>-100){
-      dir_move=45;
-    }else if(mamori.dir<-150 && mamori.y>-100){
-      dir_move=-45;
-    }else{
-      if(ball.dir>30 && ball.dir!=1000){
-        if(liney < 0)dir_move=90;
-        else dir_move=120;
-        if(mamori.x<-50)dir_move=1000;
-      }else if(ball.dir<-30){
-        if(liney < 0)dir_move=-90;
-        else dir_move=-120;
-        if(mamori.x>50)dir_move=1000;
-      }else{
-        dir_move=1000;
-      }
-    }
-    }
-  */
-  if (mamorimode) {
-    if (ball.value[0] < 300 && ball.dir < 10 && ball.dir > -10 && conect && !comin(3)) {
-      comout(2, 1);
-      tone(buzzer, 2000, 100);
-    } else
-      comout(2, 0);
-
-    //comout(3, ifkeeper);
-
-    if (comin(2) && !ifkeeper && conect) {
-      ifkeeper = 1;
-      tone(buzzer, 2000, 100);
-    }
-    if (ifkeeper == 1) {
-      if (liney < 0)
-        ifkeeper = 0;
-      dir_move = mamori.dir;
-    }
-  }
-
-  int rr = 0;
-  if (comin(2)) {
-    rr++;
-  } else if (comin(3)) {
-    rr += 2;
-  }
-
-#ifdef SE_ON
-  if (linex == 0 && liney == 0) {
-    clr_timer(47);
-  } else if (abs(linex) <= 2 && abs(liney) <= 2) {
-    if (get_timer(47) > 200) {
-      clr_timer(48);
-    }
-  } else {
-    if (get_timer(48) > 2000) {
-      myDFPlayer.play(11);
-    }
-    clr_timer(48);
-  }
-#endif
-
-  /*if (balljibun > rr && conect && Robotn == 2) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
-    dir_move = mamori.dir;
-    if (!mamori.cansee)dir_move = 180;
-    Speed = 80;
-    }
-
-    if (balljibun >= rr && conect && Robotn == 1) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
-    dir_move = mamori.dir;
-    if (!mamori.cansee)dir_move = 180;
-    Speed = 80;
-    }
-  */
-
-
-  if (kadomode == 2 || kadomode == -2) {
-    dir_move = 0;
-  } else if (kadomode == 1) {
-    if (dir_move > 90)dir_move = 90;
-  } else if (kadomode == -1)
-    if (dir_move < -90)dir_move = -90;
-  //-----------------------------ライン
-  if (check_line()) {
-    cal_line();
-    clr_timer(0);
-  }
-
-  if (!SW2) {
-    while (!SW2);
-    tone(buzzer, 2000, 100);
-    keepermode = !keepermode;
-  }
-
-
-  if (keepermode) {
-    if (linex > 3) {
-      dir_move = -90;
-    } else if (linex < -3) {
-      dir_move = 90;
-    } else {
-      if (liney >= 4) {
-        dir_move = 180;
-      } else if (liney <= 0) {
-        dir_move = 0;
-      } else {
-        if (ball.dir > 20) {
-          dir_move = 90;
-          if (liney < 2) {
-            dir_move = 75;
-          } else if (liney > 2) {
-            dir_move = 105;
-          }
-        } else if (ball.dir < -20) {
-          dir_move = -90;
-          if (liney < 2) {
-            dir_move = -75;
-          } else if (liney > 2) {
-            dir_move = -105;
-          }
-        } else {
-          dir_move = 1000;
-        }
-
-
-      }
-
-      if (linex > 0 && dir_move > 0) {
-        dir_move = 1000;
-      } else if (linex < 0 && dir_move < 0) {
-        dir_move = 1000;
-      }
-    }
-  }
-
-
-
-
-  cal_motorspeed(dir_move, Speed);
-
-
-
-  if (get_timer(32) > 200) {
-    get_pixy();
-    clr_timer(32);
-  }
-
-  if (!IFHOLD) {
-    clr_timer(49);
-  }
-  if (ball.dir < 60 && ball.dir > -60 && seme.dir != 0 && IFHOLD && get_timer(49) > 1)
-  {
-
-
-    double Pc = 1;
-    m_power[0] += seme.dir * Pc;
-    m_power[1] -= seme.dir * Pc;
-    m_power[2] -= seme.dir * Pc;
-    m_power[3] += seme.dir * Pc;
-  } else {
-    dircontrol();
-  }
-
-
-
-  if (get_timer(0) < 100) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 255, 0);
-    }
-    neo_dir(dir_move, 255, 0, 0);
-  }
-
-  if (roll > 10 || roll < -10) {
-    m_power[0] = 0;
-    m_power[1] = 0;
-    m_power[2] = 0;
-    m_power[3] = 0;
-    linex = 0;
-    liney = 0;
-
-    if (digitalRead(Pin_BUSY) == 1) {
-#ifdef SE_ON
-      myDFPlayer.play(10);
-#endif
-    }
-
-    if (get_timer(7) > 200) {
-      clr_timer(7);
-      lite = !lite;
-    }
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(lite * 255, 0, 0);
-    }
-  }
-
-
-
-  pwm_out();
-
-  /*if ((line[0] + line[1] + line[2] + line[3])*0 + line[4] + line[5] + line[6] + line[7] > 0) {
-    tone(buzzer, 2000, 10);
-    } else {
-    noTone(buzzer);
-    }
-  */
-
-
-  if (get_timer(9) > 250) {
-    AA = !AA;
-    digitalWrite(Pin_out1, AA);
-    clr_timer(9);
-  }
-  if (BB != digitalRead(Pin_in1)) {
-    clr_timer(10);
-    BB = !BB;
-  }
-  if (get_timer(10) > 500) {
-    conect = 0;
-  } else {
-    conect = 1;
-  }
-
-
-
-
-  FastLED.show();
-
-
-  kicker();
-
-  if (linex > 0 && linex < 3 || linex < 0 && linex > -3 || liney > 0 && liney < 3 || liney < 0 && liney > -3) {
-    //tone(buzzer, 1800);
-  } else {
-    //noTone(buzzer);
-  }
-
-  if (linex != 0 || liney != 0) {
-    //tone(buzzer,2000);
-  } else {
-    //noTone(buzzer);
-  }
-
-}
