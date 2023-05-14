@@ -15,10 +15,8 @@ int check_line();
 int check_line_old();
 void neo_dir(int dir, int R, int G, int B);
 int get_ball();
-void motor_move2(int p1, int p2, int p3, int p4);
 void motor_move(int p1, int p2, int p3, int p4);
 void dircontrol();
-void dircontrol2();
 void cal_motorspeed(int D, int Speed);
 unsigned long get_timer(int n);
 void clr_timer(int n);
@@ -31,6 +29,7 @@ void kickertest();
 void music();
 void set_volume();
 void get_pixy();
+int mawarikomi();
 
 
 bool keeperon = 1; //白だけキーパー
@@ -168,9 +167,9 @@ void start_sound() { //起動音
   }
 }
 
-void print_voltage() {
+void print_voltage() {   //バッテリー電圧表示
   battery = analogRead(A9);
-  display.setTextSize(1);
+  display.setTextSize(1);  
   display.setTextColor(WHITE);
 
   display.setCursor(80, 0);
@@ -351,7 +350,7 @@ void standby() {
     display.clearDisplay();
     digitalWrite(Pin_kicker, LOW);
 
-    motor_move2(1000, 1000, 1000, 1000);
+    motor_move(1000, 1000, 1000, 1000);
 
 
     if (MODE < 3)print_voltage();
@@ -541,24 +540,6 @@ void standby() {
       } else {
         //noTone(buzzer);
       }
-      /*
-        display.setTextSize(2);
-        display.setCursor(52, 0);
-        sprintf(str, "%d", line[3]);
-        display.print(str);
-
-        display.setCursor(80, 22);
-        sprintf(str, "%d", line[7]);
-        display.print(str);
-
-        display.setCursor(52, 44);
-        sprintf(str, "%d", line[11]);
-        display.print(str);
-
-        display.setCursor(20, 22);
-        sprintf(str, "%d", line[15]);
-        display.print(str);
-      */
 
     } else if (MODE == 2) {
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -588,81 +569,6 @@ void standby() {
       display.print(str);
       neo_dir(-bb, 255, 0, 0);
     } else if (MODE == 3) {
-
-      /*while (1) {
-        display.clearDisplay();
-        digitalWrite(Pin_out2, com1 % 2);
-        digitalWrite(Pin_out1, com1 % 2);
-        com1++;
-        checkping();
-        digitalWrite(Pin_out4, !SWITCH2);
-        digitalWrite(Pin_out3, !SWITCH1);
-
-        display.setTextSize(2);
-        display.setCursor(20, 0);
-        //display.print("TWELITE");
-        checkping();
-        display.setTextSize(2);
-        display.setCursor(0, 40);
-        display.print(digitalRead(Pin_in1));
-        display.setCursor(15, 40);
-        display.print(digitalRead(Pin_in2));
-        display.setCursor(30, 40);
-        display.print(digitalRead(Pin_in3));
-        display.setCursor(45, 40);
-        display.print(digitalRead(Pin_in4));
-        checkping();
-
-        if (c2 != digitalRead(Pin_in1)) {
-          c2 = !c2;
-          nn = 0;
-          a++;
-        } else {
-          nn++;
-        }
-        if (nn > 20) {
-          conect = 0;
-          a = 0;
-        } else {
-          if (a > 5)conect = 1;
-        }
-
-        if (conect == 0) {
-          display.setCursor(0, 0);
-          display.print("Disconnect");
-        } else {
-          display.setCursor(20, 0);
-          display.print("connect");
-        }
-
-        if ((conect) == 0) {
-          if (get_timer(5) > 1000) {
-            tone(buzzer, 1661, 100);
-            clr_timer(5);
-            ping = get_timer(6);
-          }
-        } else {
-          noTone(buzzer);
-        }
-        checkping();
-        display.setTextSize(2);
-        display.setCursor(35, 20);
-        display.print(ping);
-        int xxxx;
-        if (ping >= 10000)xxxx = 70;
-        else if (ping >= 1000)xxxx = 60;
-        else if (ping >= 100)xxxx = 50;
-        else if (ping >= 10)xxxx = 40;
-        display.setCursor(xxxx * 1.05 + 20, 20);
-        display.setTextSize(2);
-        display.print("ms");
-
-        display.setCursor(60, 40);
-        display.print(int(ave));
-
-        display.display();
-        clr_timer(13);
-      */
       get_sensors();
       display.setTextSize(1);
       display.setCursor(0, 0);
@@ -697,71 +603,7 @@ void standby() {
         leds[i].setHue(int(((255 / NUM_LEDS * i)) % 255));
       }
     } else if (MODE == 4) {
-      //------------------------------------------------------
-      //旧カメラチェック
-      /*
-        for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB(0, 0, 0);
-        }
-        display.setTextSize(2);
-        display.setCursor(80, 20);
-        display.print("Pixy");
-
-        if (TS1) {
-        display.setCursor(80, 40);
-        display.print("Y");
-        goalcolor = 2;
-        seme.color = 2;
-        mamori.color = 3;
-        } else {
-        display.setCursor(80, 40);
-        display.print("B");
-        goalcolor = 3;
-        seme.color = 3;
-        mamori.color = 2;
-        }
-        display.setTextSize(1);
-
-        int k = pixy.ccc.getBlocks();
-        int cccc = 0;
-        for (int i = 0; i < k; i++) {
-        if (pixy.ccc.blocks[i].m_signature == seme.color) {
-          seme.y = -(pixy.ccc.blocks[i].m_x - 150);
-          seme.x = pixy.ccc.blocks[i].m_y - 120;
-          seme.h = (pixy.ccc.blocks[i].m_width);
-          seme.w = pixy.ccc.blocks[i].m_height;
-          cccc++;
-        }
-        }
-        int cD = degrees(atan2(seme.x, seme.y));
-        if (cccc > 0) {
-        display.setCursor(0, 0);
-        display.print("X=");
-        display.setCursor(15, 0);
-        display.print(seme.x);
-        display.setCursor(0, 10);
-        display.print("Y=");
-        display.setCursor(15, 10);
-        display.print(seme.y);
-        display.setCursor(5, 20);
-        display.print(cD);
-        display.setCursor(0, 30);
-        display.print("H=");
-        display.setCursor(15, 30);
-        display.print(seme.h);
-        display.setCursor(0, 40);
-        display.print("W=");
-        display.setCursor(15, 40);
-        display.print(seme.w);
-        } else {
-        display.setCursor(0, 20);
-        display.print("NO");
-        cD = 1000;
-
-        }
-      */
-      //----------------------------------------------
-      //新カメラチェック
+      //カメラチェック
       display.setTextSize(2);
       display.setCursor(30, 20);
       display.print("Pixy");
@@ -1030,7 +872,7 @@ void loop() {
     //myDFPlayer.play(5);
   }
 
-  int balljibun;
+  int balljibun=0;
   if (ball.n <= 2) {
     comout(2, 1);
     comout(3, 0);
@@ -1143,19 +985,6 @@ void loop() {
   }
 #endif
 
-  /*if (balljibun > rr && conect && Robotn == 2) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
-    dir_move = mamori.dir;
-    if (!mamori.cansee)dir_move = 180;
-    Speed = 80;
-    }
-
-    if (balljibun >= rr && conect && Robotn == 1) { //(ball.dir == 1000 && liney >= 0 && keeperon && Robotn==1) {
-    dir_move = mamori.dir;
-    if (!mamori.cansee)dir_move = 180;
-    Speed = 80;
-    }
-  */
-
 
   if (kadomode == 2 || kadomode == -2) {
     dir_move = 0;
@@ -1216,9 +1045,6 @@ void loop() {
     }
   }
 
-
-
-
   cal_motorspeed(dir_move, Speed);
 
 
@@ -1233,8 +1059,6 @@ void loop() {
   }
   if (ball.dir < 60 && ball.dir > -60 && seme.dir != 0 && IFHOLD && get_timer(49) > 1)
   {
-
-
     double Pc = 1;
     m_power[0] += seme.dir * Pc;
     m_power[1] -= seme.dir * Pc;
@@ -1243,8 +1067,6 @@ void loop() {
   } else {
     dircontrol();
   }
-
-
 
   if (get_timer(0) < 100) {
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -1280,7 +1102,7 @@ void loop() {
 
   pwm_out();
 
-  /*if ((line[0] + line[1] + line[2] + line[3])*0 + line[4] + line[5] + line[6] + line[7] > 0) {
+  /*if ((line[0] + line[1] + line[2] + line[3])*0 + line[4] + line[5] + line[6] + line[7] > 0) {   //ライン反応でブザー
     tone(buzzer, 2000, 10);
     } else {
     noTone(buzzer);
@@ -1362,58 +1184,9 @@ void cameramonitor() {
   while (!SW1);
   tone(buzzer, 2000, 50);
   delay(50);
-  EEPROM.write(50, seme.color);
+  EEPROM.write(50, seme.color);   //攻め方向(ゴール色)をEEPROMに保存
 }
 
-void cameramonitorold() {
-  tone(buzzer, 2000, 50);
-  while (SW1) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    if (!SW3) {
-      while (!SW3);
-      tone(buzzer, 1661, 50);
-      if (goalcolor == 2) {
-        goalcolor = 3;
-        seme.color = 3;
-        mamori.color = 2;
-      } else {
-        goalcolor = 2;
-        seme.color = 2;
-        mamori.color = 3;
-      }
-    }//カラー切り替えIF
-    get_pixy();
-    if (goalcolor == 2) {
-      display.setCursor(20, 5);
-      display.print("Yellow");
-    } else {
-      display.setCursor(40, 5);
-      display.print("Blue");
-    }
-    if (seme.cansee == 1) {
-      display.setTextSize(1);
-      display.setCursor(0, 40);
-      display.print("X=");
-      display.setCursor(20, 40);
-      display.print(seme.x);
-      display.setCursor(60, 40);
-      display.print("Y=");
-      display.setCursor(80, 40);
-      display.print(seme.y);
-      display.setCursor(50, 55);
-      display.print(seme.dir);
-    } else {
-      display.setCursor(0, 40);
-      display.print("Can't see");
-    }
-    display.display();
-  }
-  while (!SW1);
-  tone(buzzer, 2000, 50);
-  delay(50);
-  EEPROM.write(50, seme.color);
-}
 
 
 void kicker() {
@@ -1995,7 +1768,7 @@ int get_ball()
 
 
 
-void motor_move2(int p1, int p2, int p3, int p4) {
+void motor_move(int p1, int p2, int p3, int p4) {
   double m1 = p1, m2 = p2, m3 = p3, m4 = p4;
   if (p1 == 1000) {
     motor[0] = 0;
@@ -2063,49 +1836,6 @@ void motor_move2(int p1, int p2, int p3, int p4) {
 
 }
 
-void motor_move(int p1, int p2, int p3, int p4) {
-  double m1 = p1, m2 = p2, m3 = p3, m4 = p4;
-  if (m1 > 0) {
-    motor[0] = 1;
-    motor[1] = double((100 - m1) / 100);
-  } else if (m1 < 0) {
-    motor[0] = double((100 + m1) / 100);
-    motor[1] = 1;
-  } else {
-    motor[0] = 1;
-    motor[1] = 1;
-  }
-  if (m2 > 0) {
-    motor[2] = 1;
-    motor[3] = double((100 - m2) / 100);
-  } else if (m2 < 0) {
-    motor[2] = double((100 + m2) / 100);
-    motor[3] = 1;
-  } else {
-    motor[2] = 1;
-    motor[3] = 1;
-  }
-  if (m3 > 0) {
-    motor[4] = 1;
-    motor[5] = double((100 - m3) / 100);
-  } else if (m3 < 0) {
-    motor[4] = double((100 + m3) / 100);
-    motor[5] = 1;
-  } else {
-    motor[4] = 1;
-    motor[5] = 1;
-  }
-  if (m4 > 0) {
-    motor[6] = 1;
-    motor[7] = double((100 - m4) / 100);
-  } else if (m4 < 0) {
-    motor[6] = double((100 + m4) / 100);
-    motor[7] = 1;
-  } else {
-    motor[6] = 1;
-    motor[7] = 1;
-  }
-}
 
 int mawarikomi() {
   if (ball.dir == 1000)return 1000;
@@ -2150,22 +1880,7 @@ void dircontrol() {
   m_power[3] -= G;
 }
 
-void dircontrol2() {
-  int G;
-  int sub = dir - Dir;
-  if (sub < -179)sub += 360;
-  else if (sub > 180)sub -= 360;
 
-  G = sub / 2 - (bd - sub) * 0;
-  bd = sub;
-
-
-  //neo_dir(-sub, 255, 0, 0);
-  m_power[0] -= G;
-  m_power[1] += G;
-  m_power[2] += G;
-  m_power[3] -= G;
-}
 
 void cal_motorspeed(int D, int Speed) {
   int MAX = 0;
@@ -2476,9 +2191,9 @@ void gameover() {
     standby();
   }
   delay(200);
-  if (SWITCH2 == 0 && SWITCH1 == 0) {
+  if (SW2 == 0 && SW1 == 0) {
     clr_timer(20);
-    while (get_timer(20) <= 3000 || !(SWITCH2 == 0 && SWITCH1 == 0)) {
+    while (get_timer(20) <= 3000 || !(SW2 == 0 && SW1 == 0)) {
       ;
     }
     if (get_timer(20) > 3000) {
@@ -2488,22 +2203,22 @@ void gameover() {
       display.setCursor(5, 15);
       display.print("PASSWARD");
       display.display();
-      while (SWITCH2 == 0 || SWITCH1 == 0);
+      while (SW2 == 0 || SW1 == 0);
       delay(100);
-      while (SWITCH2 == 1 && SWITCH1 == 1);
+      while (SW2 == 1 && SW1 == 1);
       tone(buzzer, 1600, 50);
-      if (SWITCH2 == 0) {
-        while (SWITCH2 == 0 || SWITCH1 == 0);
+      if (SW2 == 0) {
+        while (SW2 == 0 || SW1 == 0);
         delay(100);
-        while (SWITCH2 == 1 && SWITCH1 == 1);
+        while (SW2 == 1 && SW1 == 1);
         tone(buzzer, 1600, 50);
-        if (SWITCH2 == 0) {
-          while (SWITCH2 == 0 || SWITCH1 == 0);
+        if (SW2 == 0) {
+          while (SW2 == 0 || SW1 == 0);
           delay(100);
-          while (SWITCH2 == 1 && SWITCH1 == 1);
+          while (SW2 == 1 && SW1 == 1);
           tone(buzzer, 1600, 50);
-          if (SWITCH1 == 0) {
-            while (SWITCH2 == 0 || SWITCH1 == 0);
+          if (SW1 == 0) {
+            while (SW2 == 0 || SW1 == 0);
             delay(100);
             display.clearDisplay();
             display.setTextSize(2);
@@ -2515,8 +2230,8 @@ void gameover() {
             display.setCursor(85, 40);
             display.print("YES");
             display.display();
-            while (SWITCH2 == 1 && SWITCH1 == 1);
-            if (SWITCH2 == 0) {
+            while (SW2 == 1 && SW1 == 1);
+            if (SW2 == 0) {
               EEPROM.write(20, 0);
               EEPROM.write(21, 0);
               tone(buzzer, 2000, 100);
@@ -2679,12 +2394,6 @@ void dinogame()
 
   }
 }
-
-
-
-
-
-
 
 
 

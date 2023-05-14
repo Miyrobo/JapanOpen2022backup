@@ -21,22 +21,22 @@ void kicker(bool q){
 #define Pin_ball7 A1
 #define Pin_ball8 A0
 
-#define Pin_line1 42//40
-#define Pin_line2 43//41
-#define Pin_line3 40//42
-#define Pin_line4 A12//43
-#define Pin_line5 46//44
-#define Pin_line6 47//45
-#define Pin_line7 44//46
-#define Pin_line8 A13//47
-#define Pin_line9 38//36
-#define Pin_line10 39//37
-#define Pin_line11 36//38
-#define Pin_line12 A10//39
-#define Pin_line13 34//32
-#define Pin_line14 35//33
-#define Pin_line15 32//34
-#define Pin_line16 A11//35
+#define Pin_line1 42
+#define Pin_line2 43
+#define Pin_line3 40
+#define Pin_line4 A12
+#define Pin_line5 46
+#define Pin_line6 47
+#define Pin_line7 44
+#define Pin_line8 A13
+#define Pin_line9 38
+#define Pin_line10 39
+#define Pin_line11 36
+#define Pin_line12 A10
+#define Pin_line13 34
+#define Pin_line14 35
+#define Pin_line15 32
+#define Pin_line16 A11
 
 #define Pin_motor1F 3
 #define Pin_motor1B 5
@@ -59,33 +59,40 @@ void kicker(bool q){
 
 #define Pin_BUSY 50
 
-int comin(int pin){
+//------------------------------------------------------------------
+//TWILITE DIP  (bluetoothモジュール)
+
+int comin(int pin){              //データを受信
   if(pin==1)return digitalRead(Pin_in1);
   if(pin==2)return digitalRead(Pin_in2);
   if(pin==3)return digitalRead(Pin_in3);
   if(pin==4)return digitalRead(Pin_in4);
 }
 
-void comout(int pin,int val){
+void comout(int pin,int val){    //データを送信
   if(pin==1)digitalWrite(Pin_out1,val);
   if(pin==2)digitalWrite(Pin_out2,val);
   if(pin==3)digitalWrite(Pin_out3,val);
   if(pin==4)digitalWrite(Pin_out4,val);
 }
+//------------------------------------------------------------------
 
-#define SWITCH1 digitalRead(30)
-#define SWITCH2 digitalRead(28)
 
+
+//押しボタン
 #define SW1 digitalRead(30)
 #define SW2 digitalRead(28)
 #define SW3 digitalRead(10)
 
-#define TS1 digitalRead(10)
-#define TS2 !digitalRead(4)
+
+//トグルスイッチ
 #define TS digitalRead(4)
 
+
+//捕捉センサ　判定
 #define IFHOLD (analogRead(Pin_hold) > 850)
 
+//ブザーピン番号
 #define buzzer 16
 
 
