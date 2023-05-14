@@ -1,13 +1,14 @@
 #include "Arduino.h"
 #include "include.h"
 
+
+//関数の宣言
 void checkping();
 void standby();
 void positionmonitor();
 void print_voltage();
 void get_sensors();
 void cameramonitor();
-void cameramonitorold();
 void kicker();
 void pwm_out();
 int cal_line();
@@ -39,30 +40,34 @@ int kadomode = 0;
 
 int goalcolor;
 
-int FPS;
+int FPS; 
 
-int keepermode = 0;
+int keepermode = 0; 
 
+
+
+//classのインスタンス
+//-------------------------------------------------------------
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x28);
-
-// This is the main Pixy object
 Pixy2 pixy;
-
 #define OLED_RESET 4
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
+
+GOAL seme;
+GOAL mamori;
+MOTOR mot;
+BALL ball;
+//-------------------------------------------------------------
+
 
 int lx = 0, ly = 0;
 
 
 
-#define SE_ON
+#define SE_ON   //サウンドON
 
 
 unsigned long S_timer[timer_MAX] = {0};
-
-GOAL seme;
-GOAL mamori;
-MOTOR mot;
 
 
 Output motor[] = {Pin_motor1F, Pin_motor1B, Pin_motor2F, Pin_motor2B, Pin_motor3F, Pin_motor3B, Pin_motor4F, Pin_motor4B}; //出力ピンに設定
@@ -82,7 +87,7 @@ int ping;
 bool AA = 0;
 bool BB = 0;
 
-int lineF[4];
+int lineF[4]; //ラインフラグ
 
 int battery;
 
@@ -93,18 +98,12 @@ int Robotn;
 int m_power[4] = {0}; //モーター速さ -100~100 左前から時計回りに 0,1,2,3
 
 int linex = 0, liney = 0; //ライン上の位置
-
-//int ball.distance;  //ボールの値の合計
-
 int LINEd;
 
 int kickerf = 0;
 int MODE = 0;
-
 int lite = 0;
-
 int conect = 0;
-
 int corner = 0;
 
 
@@ -114,6 +113,8 @@ DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 //---------------------------------------------------------------------------
 
+
+//ジャイロのキャリブレーション値
 int Gyro_X = EEPROM[0] * 256 + EEPROM[1] - 3000;
 int Gyro_Y = EEPROM[2] * 256 + EEPROM[3] - 3000;
 int Gyro_Z = EEPROM[4] * 256 + EEPROM[5] - 3000;
@@ -121,20 +122,20 @@ int Accel_X = EEPROM[6] * 256 + EEPROM[7] - 3000;
 int Accel_Y = EEPROM[8] * 256 + EEPROM[9] - 3000;
 int Accel_Z = EEPROM[10] * 256 + EEPROM[11] - 3000;
 
-BALL ball;
+
 
 char str[32];
 
 #define MODE_MAX 7
 
-int freq[4] = {1047, 1175, 1319, 1396};
+int freq[4] = {1047, 1175, 1319, 1396};  //ド,レ,ミ,ファ　周波数
 
 void sound(int hz, int l) {
   tone(buzzer, hz, l * 0.6);
   delay(l);
 }
 
-void doremi() {
+void doremi() {   //起動音
   for (int i = 0; i < 4; i++) {
     sound(freq[i], 100);
     sound(freq[i], 100);
@@ -209,7 +210,7 @@ void setup() {
   display.display();
   pixy.init();
 
-  Robotn = EEPROM[60];
+  Robotn = EEPROM[60]; //ロボットナンバー   1 or 2
   bno_setup();
   neopixel_setup();
   pinMode(Pin_kicker, OUTPUT);
@@ -225,6 +226,7 @@ void setup() {
   digitalWrite(Pin_kicker, LOW);
   pinMode(Pin_BUSY, INPUT);
 
+  // PWM周波数
   // TCCR1B = (TCCR1B & 0b11111000) | 0x01; //31.37255 [kHz]
   // TCCR3B = (TCCR3B & 0b11111000) | 0x01; //31.37255 [kHz]
   // TCCR4B = (TCCR4B & 0b11111000) | 0x01; //31.37255 [kHz]
@@ -310,7 +312,7 @@ void setup() {
 
 
 
-void checkping() {
+void checkping() {    //bluetooth通信速度の測定
   if (n5 == digitalRead(Pin_in2)) {
     digitalWrite(Pin_out2, !n5);
     n5 = !n5;
@@ -321,7 +323,7 @@ void checkping() {
   }
 }
 
-void standby() {
+void standby() {   //スタンバイモード センサーモニター等
   linex = 0;
   liney = 0;
 
@@ -330,7 +332,7 @@ void standby() {
       Dir = get_dir();
       display.clearDisplay();
       display.setTextSize(2);
-      if (goalcolor == 2) {
+      if (goalcolor == 2) {   //ゴール色を表示
         display.setCursor(20, 25);
         display.print("Yellow");
 
@@ -350,16 +352,14 @@ void standby() {
     display.clearDisplay();
     digitalWrite(Pin_kicker, LOW);
 
-    motor_move(1000, 1000, 1000, 1000);
+    motor_move(1000, 1000, 1000, 1000);  //停止
 
 
-    if (MODE < 3)print_voltage();
-    //Serial.println(str);
-
+    if (MODE < 3)print_voltage(); //バッテリー電圧表示
 
     get_sensors();
 
-    if (MODE == 0) {
+    if (MODE == 0) {   //MODE0 ボールモニター
       if (get_timer(45) > 50) {
         clr_timer(45);
         Serial.print("B");
@@ -413,7 +413,7 @@ void standby() {
 
 
 
-    } else if (MODE == 1) {
+    } else if (MODE == 1) {   //MODE1 ラインモニター
       if (!SW2) {
         while (!SW2);
         while (SW2) {
@@ -541,7 +541,7 @@ void standby() {
         //noTone(buzzer);
       }
 
-    } else if (MODE == 2) {
+    } else if (MODE == 2) {  //MODE2 ジャイロモニター
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB(0, 0, 0);
       }
@@ -568,7 +568,8 @@ void standby() {
       sprintf(str, "%d", bb);
       display.print(str);
       neo_dir(-bb, 255, 0, 0);
-    } else if (MODE == 3) {
+
+    } else if (MODE == 3) {  //MODE3 センサーの値表示
       get_sensors();
       display.setTextSize(1);
       display.setCursor(0, 0);
@@ -602,8 +603,7 @@ void standby() {
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i].setHue(int(((255 / NUM_LEDS * i)) % 255));
       }
-    } else if (MODE == 4) {
-      //カメラチェック
+    } else if (MODE == 4) {  //MODE4 カメラチェック
       display.setTextSize(2);
       display.setCursor(30, 20);
       display.print("Pixy");
@@ -613,7 +613,7 @@ void standby() {
       }
 
 
-    } else if (MODE == 5) {
+    } else if (MODE == 5) {  //MODE5 キッカー
       display.setTextSize(2);
       display.setCursor(30, 20);
       display.print("Kicker");
@@ -621,7 +621,7 @@ void standby() {
         while (SW2 == 0);
         kickertest();
       }
-    } else if (MODE == 6) {
+    } else if (MODE == 6) { //MODE6 Music
       display.clearDisplay();
       display.setTextSize(2);
       display.setCursor(40, 20);
@@ -758,6 +758,8 @@ void standby() {
 
     FastLED.show();
   }
+
+  //トグルスイッチオン→サッカープログラム開始
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE);
@@ -768,59 +770,8 @@ void standby() {
   liney = 0;
   clr_timer(24);
   FPS = 0;
-}
 
-void positionmonitor() {
-  char *pos;
-  get_pixy();
-  get_sensors();
-  check_line();
-  if (roll > 10 || roll < -10) {
-    linex = 0;
-    liney = 0;
-  }
-  display.drawCircle(40, 32, 25, WHITE);
-  if (seme.cansee)
-    display.drawLine(40, 32, 40 + seme.x, 32 - seme.y, WHITE);
-  if (mamori.cansee)
-    display.drawLine(40, 32, 40 + mamori.x, 32 - mamori.y, WHITE);
-  pos = "";
-  if (liney > 0) {
-    if (seme.cansee && seme.dir < 30 && seme.dir > -30) {
-      pos = "F Goal";
-    } else if ((seme.cansee && seme.dir > 0) || (!seme.cansee && mamori.cansee && mamori.dir > 0)) {
-      pos = "LF End";
-    } else if ((seme.cansee && seme.dir < 0) || (!seme.cansee && mamori.cansee && mamori.dir < 0)) {
-      pos = "RF End";
-    } else {
-      pos = "unknown";
-    }
-  } else if (liney < 0) {
-    if (mamori.cansee && mamori.dir > 150 || mamori.dir < -150) {
-      pos = "B Goal";
-    } else if ((mamori.cansee && mamori.dir > 0) || (!mamori.cansee && seme.cansee && seme.dir > 0)) {
-      pos = "LB End";
-    } else if ((mamori.cansee && mamori.dir < 0) || (!mamori.cansee && seme.cansee && seme.dir < 0)) {
-      pos = "RB End";
-    } else {
-      pos = "unknown";
-    }
-  } else if (linex != 0) {
-    if (seme.cansee && seme.dir > 0 && mamori.cansee && mamori.dir > 0) {
-      pos = "L Side";
-    } else if (seme.cansee && seme.dir < 0 && mamori.cansee && mamori.dir < 0) {
-      pos = "R Side";
-    } else if ((!seme.cansee && mamori.cansee && mamori.dir > 0) || (!mamori.cansee && seme.cansee && seme.dir > 0)) {
-      pos = "L Side";
-    } else if ((!seme.cansee && mamori.cansee && mamori.dir < 0) || (!mamori.cansee && seme.cansee && seme.dir < 0)) {
-      pos = "R Side";
-    } else {
-      pos = "unknown";
-    }
-  }
-  display.setTextSize(1);
-  display.setCursor(80, 25);
-  display.print(pos);
+  //→void loop()へ
 }
 
 
@@ -857,11 +808,11 @@ void kickertest() {
 //----------------------------------------------------------------------------------------
 //メインプログラム
 void loop() {  
-  if (get_timer(24) > 1000) {
+  if (get_timer(24) > 1000) {     //1秒に1回ディスプレイ更新
     display.clearDisplay();
     display.setCursor(30, 20);
     display.setTextSize(4);
-    display.print(FPS);
+    display.print(FPS);          //ループの実行回数表示
     display.display();
     FPS = 0;
     clr_timer(24);
@@ -970,7 +921,7 @@ void loop() {
     rr += 2;
   }
 
-#ifdef SE_ON
+#ifdef SE_ON  //音鳴らす
   if (linex == 0 && liney == 0) {
     clr_timer(47);
   } else if (abs(linex) <= 2 && abs(liney) <= 2) {
@@ -986,26 +937,28 @@ void loop() {
 #endif
 
 
-  if (kadomode == 2 || kadomode == -2) {
+  if (kadomode == 2 || kadomode == -2) {  //ペナルティエリアの角から抜け出す
     dir_move = 0;
   } else if (kadomode == 1) {
     if (dir_move > 90)dir_move = 90;
   } else if (kadomode == -1)
     if (dir_move < -90)dir_move = -90;
-  //-----------------------------ライン
+
+  
+  //ライン
   if (check_line()) {
     cal_line();
     clr_timer(0);
   }
 
-  if (!SW2) {
+  if (!SW2) {       //強制キーパーモード起動
     while (!SW2);
     tone(buzzer, 2000, 100);
     keepermode = !keepermode;
   }
 
 
-  if (keepermode) {
+  if (keepermode) {   //キーパーモード(試作)
     if (linex > 3) {
       dir_move = -90;
     } else if (linex < -3) {
@@ -1057,15 +1010,18 @@ void loop() {
   if (!IFHOLD) {
     clr_timer(49);
   }
-  if (ball.dir < 60 && ball.dir > -60 && seme.dir != 0 && IFHOLD && get_timer(49) > 1)
+
+
+  if (ball.dir < 60 && ball.dir > -60 && seme.dir != 0 && IFHOLD && get_timer(49) > 1)  //ボール持ってる&ゴールが見える
   {
-    double Pc = 1;
-    m_power[0] += seme.dir * Pc;
+    //ゴールの方向に傾ける
+    double Pc = 1;  //回転速度のゲイン
+    m_power[0] += seme.dir * Pc;  
     m_power[1] -= seme.dir * Pc;
     m_power[2] -= seme.dir * Pc;
     m_power[3] += seme.dir * Pc;
   } else {
-    dircontrol();
+    dircontrol(); //普通に姿勢制御
   }
 
   if (get_timer(0) < 100) {
@@ -1075,11 +1031,13 @@ void loop() {
     neo_dir(dir_move, 255, 0, 0);
   }
 
-  if (roll > 10 || roll < -10) {
+  if (roll > 10 || roll < -10) {   //機体が傾いた = 持ち上げられた
+    //モーター停止
     m_power[0] = 0;
     m_power[1] = 0;
     m_power[2] = 0;
     m_power[3] = 0;
+    //ラインの状態リセット
     linex = 0;
     liney = 0;
 
@@ -1102,14 +1060,9 @@ void loop() {
 
   pwm_out();
 
-  /*if ((line[0] + line[1] + line[2] + line[3])*0 + line[4] + line[5] + line[6] + line[7] > 0) {   //ライン反応でブザー
-    tone(buzzer, 2000, 10);
-    } else {
-    noTone(buzzer);
-    }
-  */
 
-
+//---------------------------------------------
+//bluetooth通信
   if (get_timer(9) > 250) {
     AA = !AA;
     digitalWrite(Pin_out1, AA);
@@ -1120,10 +1073,11 @@ void loop() {
     BB = !BB;
   }
   if (get_timer(10) > 500) {
-    conect = 0;
+    conect = 0;  //500ms以上応答なし = 接続なし
   } else {
-    conect = 1;
+    conect = 1;  //接続
   }
+//---------------------------------------------
 
 
 
@@ -1133,21 +1087,9 @@ void loop() {
 
   kicker();
 
-  if (linex > 0 && linex < 3 || linex < 0 && linex > -3 || liney > 0 && liney < 3 || liney < 0 && liney > -3) {
-    //tone(buzzer, 1800);
-  } else {
-    //noTone(buzzer);
-  }
-
-  if (linex != 0 || liney != 0) {
-    //tone(buzzer,2000);
-  } else {
-    //noTone(buzzer);
-  }
-
 }
 //-------------------------------------------------------------------------------------------------------------
-
+//メインプログラム終わり
 
 
 //サブプログラム
@@ -1254,7 +1196,7 @@ void get_sensors() {               //センサーの値を取得して変数に�
   }
 }
 
-int cal_line() {
+int cal_line() {   //ライン情報から移動方向決定
   int x1 = linex;
   int y1 = liney;
   int d;
@@ -1379,7 +1321,7 @@ int cal_line() {
 
 }
 
-int check_line() {
+int check_line() {   //ライン読み取り　linex,lineyの2変数で
   int li[4];
   int xx, yy;
   bool L = 0;
@@ -1514,7 +1456,7 @@ int check_line() {
   return 0;
 }
 
-int check_lineold() {
+int check_lineold() { //旧式 (削除可)
   int x = linex, y = liney; //書きやすいように
   int d;
 
@@ -1837,7 +1779,7 @@ void motor_move(int p1, int p2, int p3, int p4) {
 }
 
 
-int mawarikomi() {
+int mawarikomi() { //回り込み
   if (ball.dir == 1000)return 1000;
   if (ball.dir < 3 && ball.dir > -3) {
     return 0;
@@ -1863,7 +1805,7 @@ int mawarikomi() {
   }
 }
 
-void dircontrol() {
+void dircontrol() {  //PDにしたかったけどDゲイン0になってるからただのP制御
   int G;
   int sub = dir - Dir;
   if (sub < -179)sub += 360;
@@ -1990,7 +1932,6 @@ void neopixel_setup() {
   pinMode(neopixel_pin, OUTPUT);
 }
 
-
 void bno_setup() {
   bno.begin();
   bno.getTemp();
@@ -2006,7 +1947,7 @@ int get_dir() {  //方位を求める
 }
 
 //dinogame
-
+//ここから↓恐竜ゲーム
 
 #pragma once
 
@@ -2532,3 +2473,55 @@ void set_volume() {
 }
 
 
+void positionmonitor() { //カメラの情報から現在地を出す(ジャパンオープン後に作ったやつ)
+  char *pos;
+  get_pixy();
+  get_sensors();
+  check_line();
+  if (roll > 10 || roll < -10) {
+    linex = 0;
+    liney = 0;
+  }
+  display.drawCircle(40, 32, 25, WHITE);
+  if (seme.cansee)
+    display.drawLine(40, 32, 40 + seme.x, 32 - seme.y, WHITE);
+  if (mamori.cansee)
+    display.drawLine(40, 32, 40 + mamori.x, 32 - mamori.y, WHITE);
+  pos = "";
+  if (liney > 0) {
+    if (seme.cansee && seme.dir < 30 && seme.dir > -30) {
+      pos = "F Goal";
+    } else if ((seme.cansee && seme.dir > 0) || (!seme.cansee && mamori.cansee && mamori.dir > 0)) {
+      pos = "LF End";
+    } else if ((seme.cansee && seme.dir < 0) || (!seme.cansee && mamori.cansee && mamori.dir < 0)) {
+      pos = "RF End";
+    } else {
+      pos = "unknown";
+    }
+  } else if (liney < 0) {
+    if (mamori.cansee && mamori.dir > 150 || mamori.dir < -150) {
+      pos = "B Goal";
+    } else if ((mamori.cansee && mamori.dir > 0) || (!mamori.cansee && seme.cansee && seme.dir > 0)) {
+      pos = "LB End";
+    } else if ((mamori.cansee && mamori.dir < 0) || (!mamori.cansee && seme.cansee && seme.dir < 0)) {
+      pos = "RB End";
+    } else {
+      pos = "unknown";
+    }
+  } else if (linex != 0) {
+    if (seme.cansee && seme.dir > 0 && mamori.cansee && mamori.dir > 0) {
+      pos = "L Side";
+    } else if (seme.cansee && seme.dir < 0 && mamori.cansee && mamori.dir < 0) {
+      pos = "R Side";
+    } else if ((!seme.cansee && mamori.cansee && mamori.dir > 0) || (!mamori.cansee && seme.cansee && seme.dir > 0)) {
+      pos = "L Side";
+    } else if ((!seme.cansee && mamori.cansee && mamori.dir < 0) || (!mamori.cansee && seme.cansee && seme.dir < 0)) {
+      pos = "R Side";
+    } else {
+      pos = "unknown";
+    }
+  }
+  display.setTextSize(1);
+  display.setCursor(80, 25);
+  display.print(pos);
+}
